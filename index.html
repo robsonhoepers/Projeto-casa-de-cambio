@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+            <meta charset="UTF-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Document</title>
+            <style>
+                .margens {
+                    margin-top: 5px;
+                    margin-left: 10px;
+                    margin-right: 10px;
+                }
+        
+                .line {
+                    display: inline;
+                }
+        
+                .entrada {
+                    width: 90%;
+                }
+        
+                .row {
+                    display: flex;
+                }
+        
+                .col40 {
+                    width: 20vw;
+                }
+        
+                .col20 {
+                    width: 60vw;
+                }
+                
+                .col60 {
+                    width: 40vw;
+                }
+        
+                .col100 {
+                    width: 100%;
+                }
+        
+                .alerta {
+                    color: red;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="row">
+                <div class="col40">
+
+                </div>
+                    <form action="" method="get">
+                        <div class="col60">
+                            <fieldset>
+                                <legend>COTAÇÃO DE MOEDA DE ACORDO COM A DATA</legend>
+                                <div class="clSelect" id="idSelect">
+                                    <label for="idLbMoedas" class="line margens">Selecione a Moeda de Entrada</label><br>
+                                    <select name="nmMoedas" id="idMoedas" class="entrada margens">
+                                        <option value="USD">Dólar Americano</option>
+                                        <option value="BRL">Real</option>
+                                        <option value="CAD">Dólar Canadence</option>
+                                        <option value="EUR">Euro</option>
+                                        <option value="GBP">Libra Esterlina</option>
+                                        <option value="AUD">Dólar Australiano</option>
+                                        <option value="CHF">Franco Suíço</option>
+                                        <option value="DKK">Coroa Dinamarquesa</option>
+                                        <option value="JPY">Iene</option>
+                                        <option value="NOK">Coroa Norueguesa</option>
+                                        <option value="SEK">Coroa Sueca</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="clSelect" id="idSelect2">
+                                    <label for="idLbMoedas" class="line margens">Selecione a Moeda de Destino</label><br>
+                                    <select name="nmMoedas" id="idMoedas" class="entrada margens">
+                                        <option value="usd">Dólar Americano</option>
+                                        <option value="brl">Real</option>
+                                        <option value="cad">Dólar Canadence</option>
+                                        <option value="eur">Euro</option>
+                                        <option value="gbp">Libra Esterlina</option>
+                                        <option value="aud">Dólar Australiano</option>
+                                        <option value="chf">Franco Suíço</option>
+                                        <option value="ddk">Coroa Dinamarquesa</option>
+                                        <option value="jpy">Iene</option>
+                                        <option value="nok">Coroa Norueguesa</option>
+                                        <option value="sek">Coroa Sueca</option>
+                                    </select>
+                                </div>
+                                <div class="margens" id="idLabel">
+                                    <label for="idLbData">Digite a data que deseja saber a cotação</label>
+                                </div>
+                                <div class="clInput">
+                                    <div>
+                                        <input type="text" id="idData" placeholder="ex. 06-14-2022" class="entrada margens">
+                                    </div>    
+                                </div>
+                                <div class="clBotao" id="idBotao">
+                                    <button type="button" id="idBtRelatorio" class="margens">Converter Moeda</button>
+                                </div>
+                                <div class="margens">
+                                   <textarea name="nmText" id="idResultado" cols="20" rows="5"></textarea>
+                                </div>
+                            </fieldset>
+                        </div>
+                    </form>
+            </div>
+            <script>
+              
+                
+                //Declaração de variáveis globais 
+                
+                var btRelatorio = document.getElementById("idBtRelatorio")
+                var saida = document.getElementById("idResultado")
+
+                /**
+                 * Inicializa consitir tela para verificar data
+                */ 
+               
+                btRelatorio.onclick = function(){
+                let isTelaValida = consistirTela()
+                if (isTelaValida) {
+                gerarCotacao()
+                limparTela()
+                }
+
+                }
+                  /**
+                 * Rotina Gera cotação
+                 * Descrição: utiliza a data e a moeda desejada,
+                 * para buscar a cotação no dia solicitado
+                 * 
+                 */
+                
+                function gerarCotacao(){
+                    
+                    let data = document.getElementById("idData").value
+                    let moeda = document.getElementById("idMoedas").value
+                    buscarcotacao(moeda,data)
+                   
+                console.log(moeda)
+                console.log(data)
+                }
+
+                  /**
+                 * Rotina cotação
+                 * Descrição: pega a url gerada pelo Banco Central,
+                 * para criar Json da moeda selecionada
+                 * 
+                 */
+                function buscarcotacao(moeda,data) {
+                   
+                    var xhr = new XMLHttpRequest(); 
+
+                    xhr.open("GET", "https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaDia(moeda=@moeda,dataCotacao=@dataCotacao)?@moeda='"+moeda+"'&@dataCotacao='"+data+"'&$top=100&$format=json&$select=paridadeCompra,paridadeVenda,cotacaoCompra,cotacaoVenda,dataHoraCotacao,tipoBoletim")
+
+                    xhr.addEventListener("load", function(){
+                    var cotacao = xhr.responseText;
+                        imprimirCotacao(cotacao)
+                    })
+                        
+                    xhr.send()
+
+                }
+                  /**
+                 * Rotina conversão
+                 * Descrição:converte a cotação de json,
+                 * para object
+                 * 
+                 */
+                function imprimirCotacao(cotacao) {                                    
+                    let cotacaoObj = JSON.parse(cotacao);
+                    let msn
+                    cotacaoObj.value.forEach(boletim => {
+                        
+                        msn = cotacaoObj.value[cotacaoObj.value.length - 1].cotacaoCompra
+                       
+                    });
+                    
+                    console.log(cotacaoObj.value[cotacaoObj.value.length - 1].cotacaoCompra)
+                    console.log(cotacaoObj);
+                    document.getElementById("idResultado").value = msn
+                    
+                }
+
+                  /**
+                 * Rotina de Consistência dos campos de entrada 
+                 * Descrição: 
+                 *     - Testa os valores dos campos de entrada e valida de 
+                 *       acordo com as regras de negócio.
+                 *     - Caso algum campo conténha valores inválidos uma mensagem
+                 *       é exibida ao usuário  
+                 * Parâmetros: none
+                 * Retorno: boolean
+                 *          true - todos os campos contém conteúdos válidos 
+                 *          false - um ou mais campos contém valores inválidos
+                 */
+                function consistirTela() {
+                let data = document.getElementById("idData").value
+                
+
+                //Consistencia campo data
+                if (data == "" || data == " ") {
+                    saida.value = "Campo Data, preenchimento obrigatório"
+                    saida.classList.add("alerta")
+                    document.getElementById("idData").focus()
+                    return false
+
+                } 
+                saida.classList.remove("alerta")
+                return true 
+                }
+
+                /**
+                 * Rotina Limpar Tela
+                 * Descrição: 
+                 *     - limpa os campos da tela
+                 * Parâmetros: none
+                 * Retorno: none
+                 */
+                function limparTela() {
+                    document.getElementById("idData").value = ""
+                    
+                }
+                                   
+                
+                    
+               
+               
+            
+            </script>
+
+            
+            
+        </body>
+</html>
+
+
+
+
+
+
+
+
+
