@@ -56,7 +56,7 @@
                                 <legend>COTAÇÃO DE MOEDA DE ACORDO COM A DATA</legend>
                                 <div class="clSelect" id="idSelect">
                                     <label for="idLbMoedas" class="line margens">Selecione a Moeda de Entrada</label><br>
-                                    <select name="nmMoedas" id="idMoedas" class="entrada margens">
+                                    <select name="nmMoedas" id="idMoedaEntrada" class="entrada margens">
                                         <option value="USD">Dólar Americano</option>
                                         <option value="BRL">Real</option>
                                         <option value="CAD">Dólar Canadence</option>
@@ -73,33 +73,33 @@
                                 
                                 <div class="clSelect" id="idSelect2">
                                     <label for="idLbMoedas" class="line margens">Selecione a Moeda de Destino</label><br>
-                                    <select name="nmMoedas" id="idMoedas" class="entrada margens">
-                                        <option value="usd">Dólar Americano</option>
-                                        <option value="brl">Real</option>
-                                        <option value="cad">Dólar Canadence</option>
-                                        <option value="eur">Euro</option>
-                                        <option value="gbp">Libra Esterlina</option>
-                                        <option value="aud">Dólar Australiano</option>
-                                        <option value="chf">Franco Suíço</option>
-                                        <option value="ddk">Coroa Dinamarquesa</option>
-                                        <option value="jpy">Iene</option>
-                                        <option value="nok">Coroa Norueguesa</option>
-                                        <option value="sek">Coroa Sueca</option>
+                                    <select name="nmMoedas" id="idMoedaSaida" class="entrada margens">
+                                        <option value="USD">Dólar Americano</option>
+                                        <option value="BRL">Real</option>
+                                        <option value="CAD">Dólar Canadence</option>
+                                        <option value="EUR">Euro</option>
+                                        <option value="GBP">Libra Esterlina</option>
+                                        <option value="AUD">Dólar Australiano</option>
+                                        <option value="CHF">Franco Suíço</option>
+                                        <option value="DDK">Coroa Dinamarquesa</option>
+                                        <option value="JPY">Iene</option>
+                                        <option value="NOK">Coroa Norueguesa</option>
+                                        <option value="SEK">Coroa Sueca</option>
                                     </select>
                                 </div>
                                 <div class="margens" id="idLabel">
-                                    <label for="idLbData">Digite a data que deseja saber a cotação</label>
+                                    <label for="idLbData">Digite o valor a ser convertido</label>
                                 </div>
                                 <div class="clInput">
                                     <div>
-                                        <input type="text" id="idData" placeholder="ex. 06-14-2022" class="entrada margens">
+                                        <input type="number" id="idNumero" step="0.01" class="entrada margens">
                                     </div>    
                                 </div>
                                 <div class="clBotao" id="idBotao">
                                     <button type="button" id="idBtRelatorio" class="margens">Converter Moeda</button>
                                 </div>
                                 <div class="margens">
-                                   <textarea name="nmText" id="idResultado" cols="20" rows="5"></textarea>
+                                    <output id="idResultado"></output>
                                 </div>
                             </fieldset>
                         </div>
@@ -112,16 +112,26 @@
                 
                 var btRelatorio = document.getElementById("idBtRelatorio")
                 var saida = document.getElementById("idResultado")
-
+                var data
+                var moedaEntrada
+                var moedaSaida
+                var conversao = 0
+                var OBJMoedaDeEntrada
+                var OBJMoedaDeSaida
+                var valorAConverter
+                
                 /**
-                 * Inicializa consitir tela para verificar data
+                 * Inicializa consistir tela para verificar data
                 */ 
                
-                btRelatorio.onclick = function(){
+                btRelatorio.onclick = async function(){
                 let isTelaValida = consistirTela()
                 if (isTelaValida) {
+                pegardata()
                 gerarCotacao()
                 limparTela()
+
+                
                 }
 
                 }
@@ -132,78 +142,67 @@
                  * 
                  */
                 
-                function gerarCotacao(){
-                    
-                    let data = document.getElementById("idData").value
-                    let moeda = document.getElementById("idMoedas").value
-                    buscarcotacao(moeda,data)
+                async function gerarCotacao(){
+                    let data = dataAtual                    
+                    let moedaEntrada = String(document.getElementById("idMoedaEntrada").value)
+                    let moedaSaida = String(document.getElementById("idMoedaSaida").value)
+                    let valorAConverter = Number(document.getElementById("idNumero").value)
                    
-                console.log(moeda)
-                console.log(data)
+                    OBJMoedaDeEntrada = await buscarMoedaEntrada(moedaEntrada,data)
+                    OBJMoedaDeSaida = await buscarMoedaSaida(moedaSaida,data)
+                    
+                    gerarConversao(valorAConverter)                
+                    console.log(moedaEntrada)
+                    console.log(moedaSaida)
+                    console.log(data)
                 }
 
                   /**
                  * Rotina cotação
-                 * Descrição: pega a url gerada pelo Banco Central,
-                 * para criar Json da moeda selecionada
+                 * Descrição: utiliza a url gerada pelo Banco Central,
+                 * para criar Json da moeda selecionada.
                  * 
                  */
-                function buscarcotacao(moeda,data) {
+                async function buscarMoedaEntrada(moedaEntrada,data) {
                    
-                    var xhr = new XMLHttpRequest(); 
-
-                    xhr.open("GET", "https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaDia(moeda=@moeda,dataCotacao=@dataCotacao)?@moeda='"+moeda+"'&@dataCotacao='"+data+"'&$top=100&$format=json&$select=paridadeCompra,paridadeVenda,cotacaoCompra,cotacaoVenda,dataHoraCotacao,tipoBoletim")
-
-                    xhr.addEventListener("load", function(){
-                    var cotacao = xhr.responseText;
-                        imprimirCotacao(cotacao)
-                    })
+                    let resposta = await fetch("https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaDia(moeda=@moeda,dataCotacao=@dataCotacao)?@moeda='"+moedaEntrada+"'&@dataCotacao='"+data+"'&$top=100&$format=json&$select=paridadeCompra,paridadeVenda,cotacaoCompra,cotacaoVenda,dataHoraCotacao,tipoBoletim")
+                    return resposta.json()
+                    console.log(resposta.json);
+                    }               
+                async function buscarMoedaSaida(moedaSaida,data) {
+                   
+                    let resposta = await fetch("https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaDia(moeda=@moeda,dataCotacao=@dataCotacao)?@moeda='"+moedaSaida+"'&@dataCotacao='"+data+"'&$top=100&$format=json&$select=paridadeCompra,paridadeVenda,cotacaoCompra,cotacaoVenda,dataHoraCotacao,tipoBoletim")
+                    return resposta.json()
+                    console.log(resposta.json);
+                   
+                    }
                         
-                    xhr.send()
-
-                }
-                  /**
-                 * Rotina conversão
-                 * Descrição:converte a cotação de json,
-                 * para object
-                 * 
-                 */
-                function imprimirCotacao(cotacao) {                                    
-                    let cotacaoObj = JSON.parse(cotacao);
-                    let msn
-                    cotacaoObj.value.forEach(boletim => {
-                        
-                        msn = cotacaoObj.value[cotacaoObj.value.length - 1].cotacaoCompra
-                       
-                    });
-                    
-                    console.log(cotacaoObj.value[cotacaoObj.value.length - 1].cotacaoCompra)
-                    console.log(cotacaoObj);
-                    document.getElementById("idResultado").value = msn
-                    
+                function gerarConversao(valorAConverter){
+                    let moedaEntrada = String(document.getElementById("idMoedaEntrada").value)
+                    let moedaSaida = String(document.getElementById("idMoedaSaida").value)
+                    let cotacaoMoedaEntrada = OBJMoedaDeEntrada.value[OBJMoedaDeEntrada.value.length - 1].cotacaoCompra
+                    let cotacaoMoedaSaida = OBJMoedaDeSaida.value[OBJMoedaDeSaida.value.length - 1].cotacaoCompra
+                    let saida = document.getElementById("idResultado")
+                        conversao = Number(cotacaoMoedaEntrada/cotacaoMoedaSaida*valorAConverter)
+                        saida.value = valorAConverter + " " + moedaEntrada + " é igual a " + conversao.toFixed(2) + " " + moedaSaida
+                        console.log(saida.value);
                 }
 
-                  /**
-                 * Rotina de Consistência dos campos de entrada 
-                 * Descrição: 
-                 *     - Testa os valores dos campos de entrada e valida de 
-                 *       acordo com as regras de negócio.
-                 *     - Caso algum campo conténha valores inválidos uma mensagem
-                 *       é exibida ao usuário  
-                 * Parâmetros: none
-                 * Retorno: boolean
-                 *          true - todos os campos contém conteúdos válidos 
-                 *          false - um ou mais campos contém valores inválidos
-                 */
-                function consistirTela() {
-                let data = document.getElementById("idData").value
                 
-
+                  /**
+                 * Rotina consistencia de tela
+                 * Descrição: testa os valores de acordo com o q foi solicitado
+                 */
+               
+                
+                function consistirTela() {
+                let numero = document.getElementById("idNumero").value
+                
                 //Consistencia campo data
-                if (data == "" || data == " ") {
-                    saida.value = "Campo Data, preenchimento obrigatório"
+                if (numero == "" || numero == " ") {
+                    saida.value = "Campo valor , preenchimento obrigatório"
                     saida.classList.add("alerta")
-                    document.getElementById("idData").focus()
+                    document.getElementById("idNumero").focus()
                     return false
 
                 } 
@@ -213,16 +212,38 @@
 
                 /**
                  * Rotina Limpar Tela
-                 * Descrição: 
-                 *     - limpa os campos da tela
+                 * Descrição: limpa os campos da tela
                  * Parâmetros: none
                  * Retorno: none
                  */
                 function limparTela() {
-                    document.getElementById("idData").value = ""
+                    document.getElementById("idNumero").value = ""
                     
                 }
-                                   
+                  /**
+                 * Rotina pegar data
+                 * Descrição: 
+                 *     - Captura a data atual para verificar o valor da cotação.
+                 * Parâmetros: none
+                 * Retorno: dataAtual
+                 */   
+
+                function pegardata() {
+                    var data = new Date();
+                    var dia = String(data.getDate()).padStart(2, '0');
+                    var mes = String(data.getMonth() + 1).padStart(2, '0');
+                    var ano = data.getFullYear();
+                    dataAtual = mes + '-' + dia + '-' + ano;
+                    console.log(dataAtual);
+                    return dataAtual
+                }
+               
+               
+               
+                
+
+                
+
                 
                     
                
